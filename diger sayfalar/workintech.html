@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workintech NextGen - 20 Sprint Takip Sistemi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: var(--card);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 30px;
+            text-align: center;
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .progress-wrapper {
+            background: var(--bg);
+            border-radius: 50px;
+            padding: 5px;
+            position: relative;
+            overflow: hidden;
+            height: 30px;
+            box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.1);
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            height: 100%;
+            border-radius: 50px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.875rem;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .sprint-card {
+            background: var(--card);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .sprint-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .sprint-header {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid transparent;
+            transition: border-color 0.3s;
+            user-select: none;
+        }
+
+        .sprint-card.completed .sprint-header {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-bottom-color: var(--success);
+        }
+
+        .sprint-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sprint-badge {
+            background: var(--primary);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+
+        .sprint-progress {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s;
+            font-size: 1.5rem;
+            color: var(--text-muted);
+        }
+
+        .sprint-card.expanded .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .sprint-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out;
+        }
+
+        .sprint-card.expanded .sprint-content {
+            max-height: 2000px;
+        }
+
+        .links-grid {
+            padding: 20px;
+        }
+
+        .link-row {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--bg);
+            border-radius: 10px;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .link-row:hover {
+            background: #e0e7ff;
+            border-color: #c7d2fe;
+            transform: translateX(5px);
+        }
+
+        .link-row.completed {
+            opacity: 0.6;
+            background: #d1fae5;
+        }
+
+        .link-row.completed a {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .checkbox-wrapper {
+            position: relative;
+            margin-right: 12px;
+        }
+
+        input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: var(--success);
+            position: relative;
+            z-index: 2;
+        }
+
+        .link-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .link-type {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            width: fit-content;
+        }
+
+        .type-lesson { background: #dbeafe; color: #1e40af; }
+        .type-practice { background: #fef3c7; color: #92400e; }
+        .type-project { background: #fce7f3; color: #be185d; }
+
+        a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+            font-size: 0.95rem;
+        }
+
+        a:hover {
+            color: var(--primary);
+        }
+
+        .module-divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 16px 0;
+            position: relative;
+        }
+
+        .module-label {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: -10px;
+            background: white;
+            padding: 0 10px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        @media (max-width: 640px) {
+            h1 { font-size: 1.5rem; }
+            .sprint-header { padding: 15px; }
+            .links-grid { padding: 15px; }
+            .link-row { padding: 10px; }
+        }
+
+        .celebration {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            z-index: 1000;
+            display: none;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+            backdrop-filter: blur(4px);
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Workintech NextGen</h1>
+            <p class="subtitle">20 Sprint Eğitim Takip Sistemi</p>
+            
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-number" id="completedCount">0</div>
+                    <div class="stat-label">Tamamlanan</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="totalCount">240</div>
+                    <div class="stat-label">Topam İçerik</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="remainingCount">240</div>
+                    <div class="stat-label">Kalan</div>
+                </div>
+            </div>
+
+            <div class="progress-wrapper">
+                <div class="progress-bar" id="totalProgress" style="width: 0%">
+                    <span id="progressPercent">0%</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn-primary" onclick="expandAll()">Tümünü Aç</button>
+                <button class="btn-secondary" onclick="collapseAll()">Tümünü Kapat</button>
+                <button class="btn-secondary" onclick="showUnfinished()">Sadece Devam Edenler</button>
+                <button class="btn-secondary" onclick="resetProgress()">Sıfırla</button>
+            </div>
+        </header>
+
+        <div id="sprintsContainer"></div>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="closeCelebration()"></div>
+    <div class="celebration" id="celebration">
+        <div style="font-size: 4rem; margin-bottom: 10px;">🎉</div>
+        <h2 style="color: var(--success); margin-bottom: 10px;">Tebrikler!</h2>
+        <p id="celebrationText"></p>
+        <button class="btn-primary" onclick="closeCelebration()" style="margin-top: 20px;">Kapat</button>
+    </div>
+
+    <script>
+        const sprintsContainer = document.getElementById('sprintsContainer');
+        const totalItems = 20 * 12; // 20 sprint, her sprintte 12 link (4x3)
+        let completedItems = 0;
+
+        // LocalStorage'dan verileri yükle
+        function loadProgress() {
+            const saved = localStorage.getItem('workintech_progress');
+            return saved ? JSON.parse(saved) : {};
+        }
+
+        // LocalStorage'a kaydet
+        function saveProgress(data) {
+            localStorage.setItem('workintech_progress', JSON.stringify(data));
+        }
+
+        const progress = loadProgress();
+
+        // Sprintleri oluştur
+        function generateSprints() {
+            for (let sprint = 1; sprint <= 20; sprint++) {
+                const sprintCard = document.createElement('div');
+                sprintCard.className = 'sprint-card';
+                sprintCard.id = `sprint-${sprint}`;
+                
+                const completedCount = getSprintCompletedCount(sprint);
+                const isCompleted = completedCount === 12;
+                
+                if (isCompleted) sprintCard.classList.add('completed');
+
+                let linksHtml = '';
+                
+                // Her sprintte 4 modül (ders+antrenman+proje)
+                for (let module = 1; module <= 4; module++) {
+                    if (module > 1) {
+                        linksHtml += `
+                            <div class="module-divider">
+                                <span class="module-label">Modül ${module}</span>
+                            </div>
+                        `;
+                    } else {
+                        linksHtml += `
+                            <div class="module-divider" style="margin-top: 0;">
+                                <span class="module-label">Modül 1</span>
+                            </div>
+                        `;
+                    }
+
+                    // Ders
+                    const lessonId = `s${sprint}_l${module}`;
+                    const lessonChecked = progress[lessonId] ? 'checked' : '';
+                    const lessonCompleted = progress[lessonId] ? 'completed' : '';
+                    
+                    linksHtml += `
+                        <div class="link-row ${lessonCompleted}" data-sprint="${sprint}">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="${lessonId}" ${lessonChecked} onchange="toggleItem('${lessonId}', ${sprint})">
+                            </div>
+                            <div class="link-content">
+                                <span class="link-type type-lesson">DERS</span>
+                                <a href="https://nextgen.workintech.com.tr/lesson/${sprint}/${module}" target="_blank">
+                                    Sprint ${sprint} - Ders ${module}
+                                </a>
+                            </div>
+                        </div>
+                    `;
+
+                    // Antrenman
+                    const practiceId = `s${sprint}_p${module}`;
+                    const practiceChecked = progress[practiceId] ? 'checked' : '';
+                    const practiceCompleted = progress[practiceId] ? 'completed' : '';
+                    
+                    linksHtml += `
+                        <div class="link-row ${practiceCompleted}" data-sprint="${sprint}">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="${practiceId}" ${practiceChecked} onchange="toggleItem('${practiceId}', ${sprint})">
+                            </div>
+                            <div class="link-content">
+                                <span class="link-type type-practice">ANTRENMAN</span>
+                                <a href="https://nextgen.workintech.com.tr/practice/${sprint}/${module}" target="_blank">
+                                    Sprint ${sprint} - Antrenman ${module}
+                                </a>
+                            </div>
+                        </div>
+                    `;
+
+                    // Proje
+                    const projectId = `s${sprint}_r${module}`;
+                    const projectChecked = progress[projectId] ? 'checked' : '';
+                    const projectCompleted = progress[projectId] ? 'completed' : '';
+                    
+                    linksHtml += `
+                        <div class="link-row ${projectCompleted}" data-sprint="${sprint}">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="${projectId}" ${projectChecked} onchange="toggleItem('${projectId}', ${sprint})">
+                            </div>
+                            <div class="link-content">
+                                <span class="link-type type-project">PROJE</span>
+                                <a href="https://nextgen.workintech.com.tr/project/${sprint}/${module}" target="_blank">
+                                    Sprint ${sprint} - Proje ${module}
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                sprintCard.innerHTML = `
+                    <div class="sprint-header" onclick="toggleSprint(${sprint})">
+                        <div class="sprint-title">
+                            <span>📦 Sprint ${sprint}</span>
+                            ${isCompleted ? '<span style="color: var(--success);">✓</span>' : ''}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <span class="sprint-progress">${completedCount}/12 tamamlandı</span>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                    </div>
+                    <div class="sprint-content">
+                        <div class="links-grid">
+                            ${linksHtml}
+                        </div>
+                    </div>
+                `;
+
+                sprintsContainer.appendChild(sprintCard);
+                
+                // İlk sprinti varsayılan olarak açık bırak
+                if (sprint === 1) {
+                    sprintCard.classList.add('expanded');
+                }
+            }
+            updateStats();
+        }
+
+        function getSprintCompletedCount(sprint) {
+            let count = 0;
+            for (let i = 1; i <= 4; i++) {
+                if (progress[`s${sprint}_l${i}`]) count++;
+                if (progress[`s${sprint}_p${i}`]) count++;
+                if (progress[`s${sprint}_r${i}`]) count++;
+            }
+            return count;
+        }
+
+        function toggleSprint(sprintNum) {
+            const card = document.getElementById(`sprint-${sprintNum}`);
+            card.classList.toggle('expanded');
+        }
+
+        function toggleItem(id, sprintNum) {
+            const checkbox = document.getElementById(id);
+            const row = checkbox.closest('.link-row');
+            const card = document.getElementById(`sprint-${sprintNum}`);
+            
+            progress[id] = checkbox.checked;
+            saveProgress(progress);
+            
+            if (checkbox.checked) {
+                row.classList.add('completed');
+                // Animasyon efekti
+                row.style.transform = 'scale(0.98)';
+                setTimeout(() => row.style.transform = '', 200);
+            } else {
+                row.classList.remove('completed');
+            }
+            
+            updateStats();
+            updateSprintHeader(sprintNum);
+            
+            // Sprint tamamlandı mı kontrol et
+            const sprintCount = getSprintCompletedCount(sprintNum);
+            if (sprintCount === 12 && !card.classList.contains('completed')) {
+                card.classList.add('completed');
+                showCelebration(`Sprint ${sprintNum} tamamlandı! 🎉`);
+            }
+            
+            // Tümü tamamlandı mı kontrol et
+            if (completedItems === totalItems) {
+                setTimeout(() => showCelebration('Tüm 20 Sprinti tamamladınız! Harika iş! 🚀🎓'), 500);
+            }
+        }
+
+        function updateSprintHeader(sprintNum) {
+            const count = getSprintCompletedCount(sprintNum);
+            const card = document.getElementById(`sprint-${sprintNum}`);
+            const progressText = card.querySelector('.sprint-progress');
+            const title = card.querySelector('.sprint-title');
+            
+            progressText.textContent = `${count}/12 tamamlandı`;
+            
+            if (count === 12) {
+                card.classList.add('completed');
+                if (!title.querySelector('span:last-child')?.textContent?.includes('✓')) {
+                    title.innerHTML += '<span style="color: var(--success);">✓</span>';
+                }
+            } else {
+                card.classList.remove('completed');
+                const checkmark = title.querySelector('span:last-child');
+                if (checkmark && checkmark.textContent === '✓') {
+                    checkmark.remove();
+                }
+            }
+        }
+
+        function updateStats() {
+            completedItems = Object.values(progress).filter(v => v).length;
+            const percent = Math.round((completedItems / totalItems) * 100);
+            const remaining = totalItems - completedItems;
+            
+            document.getElementById('completedCount').textContent = completedItems;
+            document.getElementById('remainingCount').textContent = remaining;
+            document.getElementById('totalProgress').style.width = percent + '%';
+            document.getElementById('progressPercent').textContent = percent + '%';
+        }
+
+        function expandAll() {
+            document.querySelectorAll('.sprint-card').forEach(card => card.classList.add('expanded'));
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.sprint-card').forEach(card => card.classList.remove('expanded'));
+        }
+
+        function showUnfinished() {
+            const cards = document.querySelectorAll('.sprint-card');
+            cards.forEach((card, index) => {
+                const sprintNum = index + 1;
+                const count = getSprintCompletedCount(sprintNum);
+                if (count === 12) {
+                    card.style.display = 'none';
+                } else {
+                    card.style.display = 'block';
+                    card.classList.add('expanded');
+                }
+            });
+            
+            // Show reset filter button logic could be added here
+            setTimeout(() => {
+                if(confirm('Tüm sprintleri tekrar görmek ister misiniz?')) {
+                    cards.forEach(card => {
+                        card.style.display = 'block';
+                        card.classList.remove('expanded');
+                    });
+                    document.getElementById('sprint-1').classList.add('expanded');
+                }
+            }, 100);
+        }
+
+        function resetProgress() {
+            if (confirm('Tüm ilerlemenizi sıfırlamak istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+                localStorage.removeItem('workintech_progress');
+                location.reload();
+            }
+        }
+
+        function showCelebration(text) {
+            document.getElementById('celebrationText').textContent = text;
+            document.getElementById('celebration').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function closeCelebration() {
+            document.getElementById('celebration').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        // Başlat
+        generateSprints();
+    </script>
+</body>
+</html>

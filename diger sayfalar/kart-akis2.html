@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparison Video Maker</title>
+    <style>
+        :root {
+            --card-width: 250px;     /* Dinamik değişecek */
+            --card-height: 350px;    /* Dinamik değişecek */
+            --card-gap: 20px;        /* Dinamik değişecek */
+            --frame-bg: #000000;     /* Dinamik değişecek */
+            --bg-image: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #121212;
+            color: white;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- SOL PANEL (AYARLAR) --- */
+        .sidebar {
+            width: 320px;
+            background: #1e1e1e;
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        h2 { margin: 0 0 10px 0; font-size: 1.2rem; color: #e94560; }
+        label { font-size: 0.9rem; color: #ccc; display: block; margin-bottom: 5px; }
+        
+        .control-group {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        input[type="range"] { width: 100%; accent-color: #e94560; }
+        input[type="color"] { width: 100%; height: 30px; border: none; cursor: pointer; }
+        
+        .btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            width: 100%;
+            margin-top: 5px;
+        }
+        .btn:hover { background: #c1354b; }
+        .btn-blue { background: #0f3460; }
+        .btn-blue:hover { background: #0a2545; }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 10px;
+        }
+        .file-input-wrapper input {
+            display: none;
+        }
+        .file-btn {
+            display: block;
+            background: #333;
+            color: #ddd;
+            text-align: center;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px dashed #666;
+            font-size: 0.8rem;
+        }
+        .file-btn:hover { border-color: #e94560; color: white; }
+
+        /* --- SAĞ TARAF (PREVIEW) --- */
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0d0d0d;
+            position: relative;
+        }
+
+        /* ÇERÇEVE (FRAME) */
+        .frame-container {
+            width: 90%;
+            height: 80%;
+            border: 4px solid #333;
+            position: relative;
+            overflow: hidden; /* Dışarı taşanları gizle */
+            background-color: var(--frame-bg);
+            background-image: var(--bg-image);
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        /* Kartların içinde kayacağı şerit */
+        .track {
+            display: flex;
+            align-items: center; /* Dikey ortala */
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            height: 100%;
+            will-change: transform;
+            /* İlk kartın başlangıç konumu JS ile ayarlanacak */
+        }
+
+        /* KART STİLİ */
+        .card {
+            width: var(--card-width);
+            height: var(--card-height);
+            margin-right: var(--card-gap); /* Bitişiklik ayarı */
+            flex-shrink: 0;
+            position: relative;
+            perspective: 1000px;
+            transform-style: preserve-3d;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.05); /* Yüklenene kadar placeholder */
+        }
+
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Resmi karta sığdır */
+            border-radius: 4px;
+            border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            background: #000;
+        }
+
+        /* Kart Numarası (Video stili) */
+        .card-info {
+            position: absolute;
+            bottom: -30px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            color: #aaa;
+            font-weight: bold;
+            opacity: 0; /* Sadece merkezdeyken görünsün istersen açabiliriz */
+        }
+
+        #status {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>🎚 Ayarlar</h2>
+
+        <div class="control-group">
+            <label>1. Kartları Yükle</label>
+            <div class="file-input-wrapper">
+                <label for="cardUpload" class="file-btn">📂 Kart Resimlerini Seç (Çoklu)</label>
+                <input type="file" id="cardUpload" multiple accept="image/*">
+            </div>
+            <div id="file-count" style="font-size:0.8rem; color:#888;">0 dosya seçildi</div>
+        </div>
+
+        <div class="control-group">
+            <label>2. Arkaplan (Opsiyonel)</label>
+            <input type="color" id="bgColorPicker" value="#000000">
+            <div class="file-input-wrapper" style="margin-top:5px;">
+                <label for="bgImageUpload" class="file-btn">🖼 Arkaplan Resmi Yükle</label>
+                <input type="file" id="bgImageUpload" accept="image/*">
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Kart Boyutları</label>
+            <label>Genişlik: <span id="val-w">250px</span></label>
+            <input type="range" id="widthRange" min="100" max="600" value="250">
+            
+            <label>Yükseklik: <span id="val-h">350px</span></label>
+            <input type="range" id="heightRange" min="100" max="600" value="350">
+        </div>
+
+        <div class="control-group">
+            <label>Yerleşim & Akış</label>
+            <label>Bitişiklik (Gap): <span id="val-gap">20px</span></label>
+            <input type="range" id="gapRange" min="0" max="200" value="20">
+            
+            <label>Akış Hızı: <span id="val-speed">1</span></label>
+            <input type="range" id="speedRange" min="1" max="50" value="5">
+        </div>
+
+        <button class="btn" onclick="startFlow()">▶ BAŞLAT</button>
+        <button class="btn btn-blue" onclick="resetFlow()">⏹ SIFIRLA</button>
+    </div>
+
+    <div class="main-area">
+        <div id="status">Hazır</div>
+        
+        <div class="frame-container" id="frame">
+            <div class="track" id="track">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elementleri
+        const track = document.getElementById('track');
+        const frame = document.getElementById('frame');
+        
+        // Inputlar
+        const widthRange = document.getElementById('widthRange');
+        const heightRange = document.getElementById('heightRange');
+        const gapRange = document.getElementById('gapRange');
+        const speedRange = document.getElementById('speedRange');
+        const bgColorPicker = document.getElementById('bgColorPicker');
+        
+        // Göstergeler
+        const valW = document.getElementById('val-w');
+        const valH = document.getElementById('val-h');
+        const valGap = document.getElementById('val-gap');
+        
+        // Durum Değişkenleri
+        let cards = []; // Blob URL listesi
+        let animationId = null;
+        let currentX = 0;
+        let isRunning = false;
+        
+        // --- 1. AYARLARI GÜNCELLEME (CSS Variables) ---
+        function updateStyles() {
+            document.documentElement.style.setProperty('--card-width', widthRange.value + 'px');
+            document.documentElement.style.setProperty('--card-height', heightRange.value + 'px');
+            document.documentElement.style.setProperty('--card-gap', gapRange.value + 'px');
+            document.documentElement.style.setProperty('--frame-bg', bgColorPicker.value);
+            
+            valW.innerText = widthRange.value + 'px';
+            valH.innerText = heightRange.value + 'px';
+            valGap.innerText = gapRange.value + 'px';
+        }
+
+        // Event Listener'lar
+        widthRange.addEventListener('input', updateStyles);
+        heightRange.addEventListener('input', updateStyles);
+        gapRange.addEventListener('input', updateStyles);
+        bgColorPicker.addEventListener('input', updateStyles);
+
+        // Arkaplan Resmi Yükleme
+        document.getElementById('bgImageUpload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(file){
+                const url = URL.createObjectURL(file);
+                document.documentElement.style.setProperty('--bg-image', `url(${url})`);
+            }
+        });
+
+        // Kart Resimlerini Yükleme
+        document.getElementById('cardUpload').addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            document.getElementById('file-count').innerText = `${files.length} dosya yüklendi`;
+            
+            // Track'i temizle
+            track.innerHTML = '';
+            cards = [];
+
+            files.forEach((file, index) => {
+                const url = URL.createObjectURL(file);
+                cards.push(url);
+
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                
+                const img = document.createElement('img');
+                img.src = url;
+                
+                const info = document.createElement('div');
+                info.className = 'card-info';
+                info.innerText = `#${index + 1}`; // İstersen dosya adını yazdırabiliriz: file.name
+
+                cardDiv.appendChild(img);
+                cardDiv.appendChild(info);
+                track.appendChild(cardDiv);
+            });
+
+            // Başlangıç pozisyonunu ayarla: İlk kart ortada veya hafif sağda dursun
+            // "Start diyince 1 tane başlangıç gözüksün" isteği için:
+            // Çerçevenin genişliğinin yarısı kadar öteye koyalım, böylece ilk kart ortada başlar (veya sağda)
+            resetPosition();
+        });
+
+        function resetPosition() {
+            // İlk kartı çerçevenin %10'u kadar içeriden başlat (Start çizgisi gibi)
+            const frameWidth = frame.offsetWidth;
+            currentX = frameWidth * 0.1; 
+            track.style.transform = `translateX(${currentX}px)`;
+            
+            // Efektleri sıfırla
+            const allCards = document.querySelectorAll('.card');
+            allCards.forEach(c => {
+                c.style.transform = 'none';
+                c.style.opacity = '1';
+            });
+        }
+
+        // --- 2. ANİMASYON MANTIĞI ---
+        function startFlow() {
+            if(cards.length === 0) { alert('Lütfen önce kart yükleyin!'); return; }
+            if(isRunning) return;
+            
+            isRunning = true;
+            document.getElementById('status').innerText = "Akış Başladı...";
+            loop();
+        }
+
+        function stopFlow() {
+            isRunning = false;
+            cancelAnimationFrame(animationId);
+            document.getElementById('status').innerText = "Durduruldu";
+        }
+
+        function resetFlow() {
+            stopFlow();
+            resetPosition();
+            document.getElementById('status').innerText = "Sıfırlandı";
+        }
+
+        function loop() {
+            if(!isRunning) return;
+
+            const speed = parseInt(speedRange.value) / 2; // Hızı ayarla
+            currentX -= speed; // Sola kaydır
+            
+            track.style.transform = `translateX(${currentX}px)`;
+
+            // EFEKT HESAPLAMALARI
+            applyEffects();
+
+            // Bitiş Kontrolü
+            const trackWidth = track.scrollWidth;
+            const frameWidth = frame.offsetWidth;
+            
+            // Eğer tüm şerit sola gidip kaybolduysa
+            if (-currentX > trackWidth) {
+                stopFlow();
+                alert("Akış tamamlandı!");
+                return;
+            }
+
+            animationId = requestAnimationFrame(loop);
+        }
+
+        function applyEffects() {
+            const allCards = document.querySelectorAll('.card');
+            const frameWidth = frame.offsetWidth;
+            
+            // CSS variable'dan sayısal değeri çek
+            const cWidth = parseInt(widthRange.value);
+            const cGap = parseInt(gapRange.value);
+
+            allCards.forEach((card, index) => {
+                // Kartın Frame içindeki sol pozisyonu
+                // (Index * (Genişlik + Boşluk)) + Mevcut Kaydırma Miktarı
+                const cardLeftPos = (index * (cWidth + cGap)) + currentX;
+                
+                // Sağ kenar (Giriş) ve Sol kenar (Çıkış) sınırları
+                const entryZone = frameWidth - cWidth - 50; 
+                const exitZone = 100; 
+
+                // 1. SAĞDAN GİRİŞ EFEKTİ (Daha önce yaptığımız gibi ama daha yumuşak)
+                if (cardLeftPos > entryZone) {
+                    // Ekranın sağına ne kadar yakın?
+                    const dist = cardLeftPos - entryZone;
+                    // Hafif dönme ve opaklık
+                    const rotateY = Math.min(dist / 10, 45); // Max 45 derece
+                    card.style.transform = `rotateY(-${rotateY}deg) scale(0.9)`;
+                    card.style.opacity = Math.max(0.5, 1 - (dist / 600)); 
+                }
+                // 2. SOLDAN ÇIKIŞ EFEKTİ (Yeni istek)
+                else if (cardLeftPos < exitZone) {
+                    // Ekranın soluna ne kadar yakın?
+                    const dist = exitZone - cardLeftPos;
+                    // Uzaklaşma (Scale down) ve Kararma (Fade out) ve TERS Yöne dönme
+                    const scale = Math.max(0.5, 1 - (dist / 300));
+                    const rotateY = Math.min(dist / 5, 60); 
+                    
+                    card.style.transform = `rotateY(${rotateY}deg) scale(${scale})`;
+                    card.style.opacity = scale; 
+                    card.style.filter = `blur(${dist/20}px)`; // Ekstra: Bulanıklaşarak kaybolma
+                }
+                // 3. ORTA ALAN (Comparison Odak Noktası)
+                else {
+                    card.style.transform = `rotateY(0deg) scale(1)`;
+                    card.style.opacity = 1;
+                    card.style.filter = 'none';
+                    card.style.zIndex = 5; // Ortadaki kart öne çıksın
+                }
+            });
+        }
+        
+        // Başlangıçta CSS variable'ları uygula
+        updateStyles();
+    </script>
+</body>
+</html>

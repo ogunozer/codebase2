@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Ayıklayıcı</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f4f4; }
+        .container { display: flex; gap: 20px; max-width: 900px; margin: 0 auto; }
+        .box { flex: 1; display: flex; flex-direction: column; }
+        textarea { width: 100%; height: 400px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; resize: vertical; font-family: monospace; }
+        h3 { margin-bottom: 10px; color: #333; }
+        button { margin: 10px 0; padding: 10px 20px; background-color: #28a745; color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 16px; }
+        button:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="box">
+        <h3>Girdi (Karışık Metin)</h3>
+        <textarea id="inputText" placeholder="Metni buraya yapıştır..."></textarea>
+    </div>
+    <div class="box">
+        <h3>Çıktı (Sadece Linkler)</h3>
+        <textarea id="outputText" readonly placeholder="Linkler burada çıkacak..."></textarea>
+    </div>
+</div>
+
+<div style="text-align: center;">
+    <button onclick="extractLinks()">Linkleri Getir</button>
+</div>
+
+<script>
+    function extractLinks() {
+        const text = document.getElementById('inputText').value;
+        // Regex: http veya https ile başlayan ve boşluk görene kadar devam eden yazıları al
+        const links = text.match(/(https?:\/\/[^\s]+)/g);
+        const outputBox = document.getElementById('outputText');
+
+        if (links) {
+            outputBox.value = links.join('\n');
+        } else {
+            outputBox.value = "Link bulunamadı.";
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Kart Akış Sistemi</title>
+    <style>
+        :root {
+            --card-width: 200px;
+            --card-height: 280px;
+            --gap: 20px;
+            --bg-color: #1a1a2e;
+            --accent-color: #e94560;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* --- Kontrol Paneli --- */
+        .controls {
+            background: rgba(22, 33, 62, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            margin-bottom: 30px;
+            text-align: center;
+            width: 80%;
+            max-width: 800px;
+            z-index: 10;
+        }
+
+        .input-group {
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* Şık Dosya Yükleme Butonu */
+        .file-upload {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+        
+        .file-upload input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.6);
+        }
+
+        .btn-secondary {
+            background-color: #0f3460;
+            box-shadow: none;
+        }
+
+        /* Slider */
+        input[type=range] {
+            width: 200px;
+            accent-color: var(--accent-color);
+        }
+
+        /* Yüklenenler Listesi (Önizleme) */
+        #preview-area {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px;
+            margin-top: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            min-height: 60px;
+        }
+        
+        .thumb {
+            width: 50px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #555;
+            position: relative;
+        }
+        .thumb-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            width: 15px;
+            height: 15px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- Ana Sahne (Frame) --- */
+        .scene {
+            /* 4 kart + 3 boşluk genişliği kadar alan */
+            width: calc((var(--card-width) * 4) + (var(--gap) * 3));
+            height: 350px;
+            perspective: 1200px; /* 3D derinlik hissi için kritik */
+            position: relative;
+            /* Kenarlardan taşmayı gizle */
+            overflow: hidden; 
+            
+            /* Kenarlara yumuşak geçiş maskesi */
+            mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+            
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .track {
+            display: flex;
+            gap: var(--gap);
+            position: absolute;
+            left: 0;
+            top: 35px; /* Kartları ortala */
+            will-change: transform;
+        }
+
+        /* Kart Stili */
+        .card {
+            width: var(--card-width);
+            height: var(--card-height);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+            flex-shrink: 0; /* Küçülmeyi engelle */
+            
+            /* 3D Transform Başlangıcı */
+            transform-style: preserve-3d;
+            transition: transform 0.3s;
+            position: relative;
+        }
+
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Sağdan giriş efekti için animasyon class'ı */
+        .card-3d-effect {
+            animation: entryEffect 1s ease-out;
+        }
+
+        /* Kartın üzerine yansıma efekti */
+        .card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%);
+            pointer-events: none;
+        }
+
+        /* Kart Numarası */
+        .card-number {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Animasyon Keyframes */
+        /* JS ile dinamik olarak kontrol edeceğiz ama temel mantık soldan sağa kayma */
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <h2>🎴 Kart Akış Yöneticisi</h2>
+        
+        <div class="input-group">
+            <div class="file-upload btn btn-secondary">
+                <span>📂 Resimleri Seç</span>
+                <input type="file" id="imageInput" multiple accept="image/*">
+            </div>
+            
+            <div>
+                <label for="speedRange">Hız Ayarı:</label>
+                <input type="range" id="speedRange" min="1" max="50" value="10">
+            </div>
+
+            <button class="btn" onclick="startAnimation()">▶ Başlat</button>
+            <button class="btn btn-secondary" onclick="resetAnimation()">⏹ Sıfırla</button>
+        </div>
+
+        <div id="status-text" style="font-size: 0.9em; color: #aaa; margin-bottom: 5px;">Henüz resim yüklenmedi.</div>
+        <div id="preview-area"></div>
+    </div>
+
+    <div class="scene">
+        <div class="track" id="track">
+            </div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const previewArea = document.getElementById('preview-area');
+        const track = document.getElementById('track');
+        const speedRange = document.getElementById('speedRange');
+        const statusText = document.getElementById('status-text');
+
+        let uploadedImages = []; // Yüklenen resimlerin blob URL'lerini tutar
+        let animationId = null;
+        let positionX = 0;
+        let isRunning = false;
+
+        // 1. Resim Yükleme İşlemi
+        imageInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            
+            if (files.length === 0) return;
+
+            // Mevcut listeye ekle (Yükleme sırasını korur)
+            files.forEach((file, index) => {
+                const imgUrl = URL.createObjectURL(file);
+                uploadedImages.push(imgUrl);
+
+                // Önizleme oluştur
+                const thumbContainer = document.createElement('div');
+                thumbContainer.style.position = 'relative';
+                
+                const img = document.createElement('img');
+                img.src = imgUrl;
+                img.className = 'thumb';
+                
+                const badge = document.createElement('div');
+                badge.className = 'thumb-badge';
+                badge.innerText = uploadedImages.length; // Sıra numarası
+
+                thumbContainer.appendChild(img);
+                thumbContainer.appendChild(badge);
+                previewArea.appendChild(thumbContainer);
+            });
+
+            statusText.innerText = `Toplam ${uploadedImages.length} kart yüklendi. Başlat'a basın.`;
+        });
+
+        // 2. Animasyonu Başlatma
+        function startAnimation() {
+            if (uploadedImages.length === 0) {
+                alert("Lütfen önce resim yükleyin!");
+                return;
+            }
+            if (isRunning) return; // Zaten çalışıyorsa tekrar başlatma
+
+            isRunning = true;
+            createCards(); // Kartları DOM'a ekle
+            animate();
+        }
+
+        // 3. Kartları Oluşturma
+        function createCards() {
+            track.innerHTML = ''; // Temizle
+            
+            // Kullanıcının "Akış" isteği için kartları yan yana diziyoruz.
+            // Sonsuz döngü hissi veya uzun bir tren gibi düşünelim.
+            uploadedImages.forEach((url, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                
+                // 3D Derinlik efekti için stil (başlangıçta düz)
+                // Animasyon döngüsü içinde bunu güncelleyebiliriz
+                
+                const img = document.createElement('img');
+                img.src = url;
+                
+                const num = document.createElement('div');
+                num.className = 'card-number';
+                num.innerText = index + 1;
+
+                card.appendChild(img);
+                card.appendChild(num);
+                track.appendChild(card);
+            });
+            
+            // Başlangıç pozisyonu: Kartlar sağ kenardan girmeye başlasın diye
+            // track'i biraz sağa itebiliriz veya 0'dan başlatabiliriz.
+            // 0'dan başlatırsak ilk 4'ü hemen görünür.
+            positionX = 0; 
+        }
+
+        // 4. Animasyon Döngüsü
+        function animate() {
+            if (!isRunning) return;
+
+            const speed = parseInt(speedRange.value) / 5; // Hız faktörü
+            positionX -= speed; // Sola doğru kaydır
+
+            // Tüm genişliği hesapla
+            const cardWidth = 200; // CSS değişkeniyle eşleşmeli
+            const gap = 20;
+            const totalWidth = uploadedImages.length * (cardWidth + gap);
+            const viewPortWidth = (cardWidth * 4) + (gap * 3);
+
+            // Hareket ettir
+            track.style.transform = `translateX(${positionX}px)`;
+
+            // --- 3D EFEKT MANTIĞI ---
+            // Her karede kartların konumunu kontrol edip efekt verelim
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                // Kartın şu anki mutlak X pozisyonu (Viewport'a göre)
+                const cardLeft = (index * (cardWidth + gap)) + positionX;
+                
+                // Viewport'un en sağı (Giriş noktası) yaklaşık 880px civarıdır
+                const entryPoint = 880; 
+                
+                // Eğer kart giriş noktasındaysa (sağ kenar)
+                if (cardLeft > 700 && cardLeft < 950) {
+                    // Hafif sağa dönük (Y ekseni) ve biraz geride
+                    // Sağdan girerken "kapıdan giriyormuş" gibi döner.
+                    const rotation = (cardLeft - 700) / 5; // Basit matematik
+                    card.style.transform = `perspective(1000px) rotateY(-${Math.min(rotation, 45)}deg) scale(0.9)`;
+                    card.style.opacity = "0.8";
+                } 
+                // Eğer kart çıkış noktasındaysa (sol kenar)
+                else if (cardLeft < 100) {
+                     const rotation = (100 - cardLeft) / 5;
+                     card.style.transform = `perspective(1000px) rotateY(${Math.min(rotation, 45)}deg) scale(0.9)`;
+                     card.style.opacity = "0.8";
+                }
+                else {
+                    // Ortadaysa düz dur
+                    card.style.transform = `perspective(1000px) rotateY(0deg) scale(1)`;
+                    card.style.opacity = "1";
+                }
+            });
+
+            // Eğer tüm kartlar geçtiyse durdur veya başa sar
+            // Şimdilik sona gelince duralım (istek: "sonuncuya kadar")
+            // Eğer en son kart ekranın solundan tamamen çıktıysa:
+            if (-positionX > totalWidth) {
+                // Döngü bitti
+                isRunning = false;
+                alert("Akış tamamlandı!");
+                return;
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function resetAnimation() {
+            isRunning = false;
+            cancelAnimationFrame(animationId);
+            positionX = 0;
+            track.style.transform = `translateX(0px)`;
+            
+            // Kartları başlangıç durumuna getir
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(c => c.style.transform = 'none');
+        }
+
+    </script>
+</body>
+</html>
